@@ -33,6 +33,8 @@ jobs:
         run: npm ci
 
       - name: Build App
+        env:
+          BASE_PATH: /DevPortfolio/
         run: npm run build
 
       - name: Setup Pages
