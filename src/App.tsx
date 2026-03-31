@@ -1,16 +1,47 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
 import { useProjects } from './useProjects';
 import { useTheme } from './useTheme';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectCard } from './components/ProjectCard';
 import { GithubImportModal } from './components/GithubImportModal';
-import { Project, ViewMode } from './types';
-import { Plus, Download, Upload, LayoutGrid, Eye, Search, Briefcase, Github, Share2, Copy, Check, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Project } from './types';
+import { applyMetadata } from './seo';
+import { Plus, Download, Upload, LayoutGrid, Eye, Search, Briefcase, Github, Share2, Check, Sun, Moon, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const getProjectPriority = (project: Project) => {
+  const hasDescription = !!project.description.trim();
+  const hasVisual = !!(project.imageUrl.trim() || project.liveUrl.trim());
+  return Number(hasDescription) + Number(hasVisual);
+};
+
+const sortProjectsByCompleteness = (projects: Project[]) =>
+  [...projects].sort((left, right) => {
+    const priorityDifference = getProjectPriority(right) - getProjectPriority(left);
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
+    return right.updatedAt - left.updatedAt;
+  });
+
 function ManageView() {
-  const { projects, addProject, updateProject, deleteProject, syncGithubProjects, importData, exportData, isLoaded } = useProjects();
+  const {
+    projects,
+    addProject,
+    updateProject,
+    deleteProject,
+    syncGithubProjects,
+    syncGithubPortfolio,
+    configureGithubAutoSync,
+    importData,
+    exportData,
+    isLoaded,
+    githubSyncSettings,
+    githubSyncStatus,
+    githubSyncMessage,
+  } = useProjects();
   const { isDark, toggleTheme } = useTheme();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
@@ -25,6 +56,14 @@ function ManageView() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
+
+  useEffect(() => {
+    applyMetadata({
+      title: 'DevPortfolio Manager | Akhmad Sudaisi',
+      description: 'Manage, curate, and share portfolio projects from the DevPortfolio dashboard.',
+      urlPath: '/',
+    });
+  }, []);
 
   if (!isLoaded) return null;
 
@@ -81,10 +120,12 @@ function ManageView() {
     }
   };
 
-  const filteredProjects = projects.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.techStack.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredProjects = sortProjectsByCompleteness(
+    projects.filter(p => 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.techStack.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
   );
 
   const totalPages = Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE);
@@ -160,10 +201,23 @@ function ManageView() {
             <button
               onClick={() => setIsGithubModalOpen(true)}
               className="p-2.5 text-gray-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-500/50 transition-colors shadow-sm"
-              title="Sync from GitHub"
+              title={
+                githubSyncSettings.enabled && githubSyncSettings.username
+                  ? `Sync from GitHub (auto-sync active for @${githubSyncSettings.username})`
+                  : 'Sync from GitHub'
+              }
             >
               <Github size={18} />
             </button>
+            {githubSyncSettings.enabled && githubSyncSettings.username && (
+              <button
+                onClick={() => void syncGithubPortfolio(githubSyncSettings.username)}
+                className="p-2.5 text-gray-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-500/50 transition-colors shadow-sm"
+                title={`Refresh portfolio from @${githubSyncSettings.username}`}
+              >
+                <RefreshCw size={18} className={githubSyncStatus === 'syncing' ? 'animate-spin' : ''} />
+              </button>
+            )}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="p-2.5 text-gray-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-500/50 transition-colors shadow-sm"
@@ -189,6 +243,27 @@ function ManageView() {
             </button>
           </div>
         </div>
+
+        {(githubSyncStatus !== 'idle' || githubSyncSettings.enabled) && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 text-xs font-mono">
+            {githubSyncSettings.enabled && githubSyncSettings.username && (
+              <span className="px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                Auto-sync active for @{githubSyncSettings.username}
+              </span>
+            )}
+            {githubSyncMessage && (
+              <span
+                className={`px-3 py-1.5 rounded-full border ${
+                  githubSyncStatus === 'error'
+                    ? 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400'
+                    : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-400'
+                }`}
+              >
+                {githubSyncMessage}
+              </span>
+            )}
+          </div>
+        )}
 
         {filteredProjects.length === 0 ? (
           <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 rounded-3xl border border-gray-200 dark:border-zinc-800 border-dashed">
@@ -280,8 +355,11 @@ function ManageView() {
         )}
         {isGithubModalOpen && (
           <GithubImportModal
-            onImport={(projects) => {
-              syncGithubProjects(projects);
+            initialUsername={githubSyncSettings.username}
+            initialAutoSync={githubSyncSettings.enabled}
+            onImport={({ projects, username, autoSync }) => {
+              syncGithubProjects(projects, username);
+              configureGithubAutoSync(username, autoSync);
             }}
             onCancel={() => setIsGithubModalOpen(false)}
           />
@@ -340,12 +418,28 @@ function PortfolioView() {
     }
   }, [isLoaded, searchParams, localProjects]);
 
+  useEffect(() => {
+    const sharedProjectCount = projects.length;
+    const hasSharedData = searchParams.has('data');
+    const description = hasSharedData && sharedProjectCount > 0
+      ? `Explore ${sharedProjectCount} selected projects, apps, and open-source work from Akhmad Sudaisi.`
+      : 'Explore selected apps, recent projects, and open-source work from Akhmad Sudaisi.';
+
+    applyMetadata({
+      title: 'Akhmad Sudaisi Portfolio',
+      description,
+      urlPath: `/portfolio${window.location.search}`,
+    });
+  }, [projects.length, searchParams]);
+
   if (!isLoaded) return null;
 
-  const filteredProjects = projects.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.techStack.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredProjects = sortProjectsByCompleteness(
+    projects.filter(p => 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.techStack.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
   );
 
   return (

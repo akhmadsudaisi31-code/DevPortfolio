@@ -1,0 +1,39 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" rx="36" fill="#06131A"/>
+  <rect x="36" y="36" width="1128" height="558" rx="28" fill="url(#panel)"/>
+  <circle cx="1036" cy="132" r="172" fill="#1F8A70" fill-opacity="0.18"/>
+  <circle cx="944" cy="488" r="220" fill="#2DD4BF" fill-opacity="0.12"/>
+  <circle cx="208" cy="114" r="124" fill="#F59E0B" fill-opacity="0.10"/>
+  <rect x="112" y="116" width="124" height="124" rx="26" fill="#0B2A33" stroke="#3DD2B6" stroke-width="2"/>
+  <path d="M151 177C151 163.193 162.193 152 176 152H190C203.807 152 215 163.193 215 177V188C215 201.807 203.807 213 190 213H176C162.193 213 151 201.807 151 188V177Z" fill="#3DD2B6"/>
+  <path d="M195 170H169V178H195V170Z" fill="#0B2A33"/>
+  <path d="M195 187H169V195H195V187Z" fill="#0B2A33"/>
+  <text x="112" y="312" fill="#8FE9D8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="28" letter-spacing="1.8">PORTFOLIO</text>
+  <text x="112" y="396" fill="#F8FAFC" font-family="ui-sans-serif, system-ui, sans-serif" font-size="68" font-weight="700">Akhmad Sudaisi</text>
+  <text x="112" y="456" fill="#C9D5DB" font-family="ui-sans-serif, system-ui, sans-serif" font-size="30">
+    Selected apps, recent projects, and open-source work
+  </text>
+  <text x="112" y="500" fill="#91A4AE" font-family="ui-sans-serif, system-ui, sans-serif" font-size="24">
+    Built with DevPortfolio and shared as a clean public preview
+  </text>
+  <rect x="112" y="535" width="212" height="42" rx="21" fill="#0D232B" stroke="#24434F"/>
+  <text x="145" y="562" fill="#DDFBF3" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="22">
+    /portfolio
+  </text>
+  <rect x="788" y="188" width="278" height="198" rx="26" fill="#0B2028" stroke="#28454F"/>
+  <rect x="822" y="224" width="120" height="14" rx="7" fill="#3DD2B6"/>
+  <rect x="822" y="252" width="198" height="12" rx="6" fill="#56717B"/>
+  <rect x="822" y="280" width="166" height="12" rx="6" fill="#56717B"/>
+  <rect x="822" y="320" width="86" height="32" rx="16" fill="#123944"/>
+  <rect x="918" y="320" width="102" height="32" rx="16" fill="#123944"/>
+  <rect x="788" y="406" width="216" height="126" rx="26" fill="#0B2028" stroke="#28454F"/>
+  <rect x="822" y="442" width="140" height="14" rx="7" fill="#F59E0B"/>
+  <rect x="822" y="470" width="128" height="12" rx="6" fill="#56717B"/>
+  <rect x="822" y="494" width="92" height="12" rx="6" fill="#56717B"/>
+  <defs>
+    <linearGradient id="panel" x1="92" y1="74" x2="1094" y2="558" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A1820"/>
+      <stop offset="1" stop-color="#10252D"/>
+    </linearGradient>
+  </defs>
+</svg>

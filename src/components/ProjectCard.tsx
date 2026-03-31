@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Project, ViewMode } from '../types';
 import { ExternalLink, Github, Mail, Edit2, Trash2, Code2 } from 'lucide-react';
 
@@ -12,19 +12,52 @@ interface ProjectCardProps {
 export function ProjectCard({ project, mode, onEdit, onDelete }: ProjectCardProps) {
   const isManage = mode === 'manage';
   const [imageError, setImageError] = useState(false);
+  const [shouldLoadPreview, setShouldLoadPreview] = useState(!!project.imageUrl.trim());
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setImageError(false);
+    setShouldLoadPreview(!!project.imageUrl.trim());
+  }, [project.id, project.imageUrl]);
+
+  useEffect(() => {
+    if (shouldLoadPreview || (!project.imageUrl.trim() && !project.liveUrl.trim())) {
+      return;
+    }
+
+    const element = cardRef.current;
+    if (!element) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoadPreview(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '240px 0px' }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [project.imageUrl, project.liveUrl, shouldLoadPreview]);
 
   // Determine which image to show
   // 1. If user provided an imageUrl, use it.
   // 2. If no imageUrl but there is a liveUrl, use a free screenshot API (microlink.io)
   // 3. If neither, or if the image fails to load, show the fallback icon.
-  const displayImageUrl = project.imageUrl 
+  const displayImageUrl = shouldLoadPreview
     ? project.imageUrl 
-    : (project.liveUrl && !imageError) 
+      ? project.imageUrl 
+      : (project.liveUrl && !imageError) 
       ? `https://api.microlink.io/?url=${encodeURIComponent(project.liveUrl)}&screenshot=true&meta=false&embed=screenshot.url`
-      : null;
+      : null
+    : null;
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden hover:border-gray-300 dark:hover:border-zinc-700 transition-all duration-300 group flex flex-col h-full shadow-sm hover:shadow-md dark:shadow-none">
+    <div ref={cardRef} className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden hover:border-gray-300 dark:hover:border-zinc-700 transition-all duration-300 group flex flex-col h-full shadow-sm hover:shadow-md dark:shadow-none">
       {displayImageUrl ? (
         <div className="h-48 w-full overflow-hidden bg-gray-100 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 relative">
           <img 
@@ -32,6 +65,8 @@ export function ProjectCard({ project, mode, onEdit, onDelete }: ProjectCardProp
             alt={project.name} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 dark:opacity-80 group-hover:opacity-100"
             referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
             onError={() => setImageError(true)}
           />
           {isManage && (

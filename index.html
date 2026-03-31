@@ -3,11 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>Akhmad Sudaisi Portfolio</title>
+    <meta
+      name="description"
+      content="Explore the portfolio of Akhmad Sudaisi, featuring selected apps, web projects, and open-source work."
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Akhmad Sudaisi Portfolio" />
+    <meta property="og:title" content="Akhmad Sudaisi Portfolio" />
+    <meta
+      property="og:description"
+      content="Explore selected apps, recent projects, and open-source work from Akhmad Sudaisi."
+    />
+    <meta property="og:url" content="/portfolio" />
+    <meta property="og:image" content="/portfolio-preview.svg" />
+    <meta property="og:image:alt" content="Preview card for Akhmad Sudaisi portfolio" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Akhmad Sudaisi Portfolio" />
+    <meta
+      property="twitter:description"
+      content="Explore selected apps, recent projects, and open-source work from Akhmad Sudaisi."
+    />
+    <meta property="twitter:image" content="/portfolio-preview.svg" />
+    <link rel="canonical" href="/portfolio" />
+    <script>
+      (function () {
+        var storedTheme = window.localStorage.getItem('theme');
+        var isDark = storedTheme ? storedTheme === 'dark' : true;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

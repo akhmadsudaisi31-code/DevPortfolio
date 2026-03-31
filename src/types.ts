@@ -10,6 +10,10 @@ export interface Project {
   imageUrl: string;
   createdAt: number;
   updatedAt: number;
+  source?: 'manual' | 'github';
+  githubRepoFullName?: string;
+  githubUpdatedAt?: string;
+  githubAutoSync?: boolean;
 }
 
 export type ViewMode = 'manage' | 'portfolio';
