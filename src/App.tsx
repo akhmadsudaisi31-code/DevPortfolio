@@ -5,8 +5,11 @@ import { useTheme } from './useTheme';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectCard } from './components/ProjectCard';
 import { GithubImportModal } from './components/GithubImportModal';
+import { fetchGithubProjectsForUser, GithubApiError } from './github';
 import { Project } from './types';
 import { applyMetadata } from './seo';
+import { decodeSharedProjects, encodeSharedProjects, getCommonGithubUsername } from './share';
+import { appBasePath, buildAppUrl } from './site';
 import { Plus, Download, Upload, LayoutGrid, Eye, Search, Briefcase, Github, Share2, Check, Sun, Moon, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -61,7 +64,7 @@ function ManageView() {
     applyMetadata({
       title: 'DevPortfolio Manager | Akhmad Sudaisi',
       description: 'Manage, curate, and share portfolio projects from the DevPortfolio dashboard.',
-      urlPath: '/',
+      urlPath: '',
     });
   }, []);
 
@@ -100,16 +103,15 @@ function ManageView() {
 
   const handleShare = () => {
     try {
-      const minimalProjects = projects.map(p => ({
-        n: p.name,
-        d: p.description,
-        l: p.liveUrl,
-        r: p.repoUrl,
-        t: p.techStack,
-        i: p.imageUrl
-      }));
-      const encodedData = btoa(encodeURIComponent(JSON.stringify(minimalProjects)));
-      const shareUrl = `${window.location.origin}/portfolio?data=${encodedData}`;
+      const githubUsername = getCommonGithubUsername(projects) || githubSyncSettings.username.trim();
+      const canUseGithubShare =
+        !!githubUsername &&
+        projects.length > 0 &&
+        getCommonGithubUsername(projects)?.toLowerCase() === githubUsername.toLowerCase();
+
+      const shareUrl = canUseGithubShare
+        ? buildAppUrl(`portfolio?github=${encodeURIComponent(githubUsername)}`)
+        : buildAppUrl(`portfolio?data=${encodeSharedProjects(projects)}`);
       
       navigator.clipboard.writeText(shareUrl).then(() => {
         setIsCopied(true);
@@ -376,6 +378,7 @@ function PortfolioView() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [clicks, setClicks] = useState<number[]>([]);
+  const [shareLoadError, setShareLoadError] = useState('');
   const navigate = useNavigate();
 
   const handleSecretClick = () => {
@@ -390,32 +393,79 @@ function PortfolioView() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    
+
+    let isCancelled = false;
     const dataParam = searchParams.get('data');
-    if (dataParam) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(atob(dataParam)));
-        const mappedProjects: Project[] = decoded.map((p: any, idx: number) => ({
-          id: `shared-${idx}`,
-          name: p.n || '',
-          description: p.d || '',
-          liveUrl: p.l || '',
-          repoUrl: p.r || '',
-          techStack: p.t || [],
-          imageUrl: p.i || '',
-          emailUsed: '',
-          notes: '',
-          createdAt: 0,
-          updatedAt: 0
-        }));
-        setProjects(mappedProjects);
-      } catch (e) {
-        console.error("Failed to parse shared data", e);
-        setProjects(localProjects);
+    const githubParam = searchParams.get('github');
+
+    const hydrateSharedProjects = async () => {
+      if (githubParam) {
+        try {
+          const githubProjects = await fetchGithubProjectsForUser(githubParam);
+          if (isCancelled) {
+            return;
+          }
+
+          setShareLoadError('');
+          setProjects(
+            githubProjects.map((project, index) => ({
+              ...project,
+              id: project.githubRepoFullName || `shared-github-${index}`,
+              createdAt: 0,
+              updatedAt: 0,
+            }))
+          );
+          return;
+        } catch (error) {
+          if (isCancelled) {
+            return;
+          }
+
+          setShareLoadError(
+            error instanceof GithubApiError
+              ? error.message
+              : 'Failed to load shared GitHub portfolio. Showing local portfolio instead.'
+          );
+          setProjects(localProjects);
+          return;
+        }
       }
-    } else {
+
+      if (dataParam) {
+        try {
+          const decoded = decodeSharedProjects(dataParam);
+          const mappedProjects: Project[] = decoded.map((project, idx) => ({
+            id: `shared-${idx}`,
+            name: project.n || '',
+            description: project.d || '',
+            liveUrl: project.l || '',
+            repoUrl: project.r || '',
+            techStack: project.t || [],
+            imageUrl: project.i || '',
+            emailUsed: '',
+            notes: '',
+            createdAt: 0,
+            updatedAt: 0,
+          }));
+          setShareLoadError('');
+          setProjects(mappedProjects);
+        } catch (error) {
+          console.error('Failed to parse shared data', error);
+          setShareLoadError('Failed to read shared portfolio data. Showing local portfolio instead.');
+          setProjects(localProjects);
+        }
+        return;
+      }
+
+      setShareLoadError('');
       setProjects(localProjects);
-    }
+    };
+
+    void hydrateSharedProjects();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [isLoaded, searchParams, localProjects]);
 
   useEffect(() => {
@@ -428,7 +478,7 @@ function PortfolioView() {
     applyMetadata({
       title: 'Akhmad Sudaisi Portfolio',
       description,
-      urlPath: `/portfolio${window.location.search}`,
+      urlPath: `portfolio${window.location.search}`,
     });
   }, [projects.length, searchParams]);
 
@@ -485,6 +535,12 @@ function PortfolioView() {
           </p>
         </div>
 
+        {shareLoadError && (
+          <div className="mb-8 px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm font-mono">
+            {shareLoadError}
+          </div>
+        )}
+
         <div className="sm:hidden relative w-full mb-8">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={16} />
           <input
@@ -530,7 +586,7 @@ function PortfolioView() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={appBasePath}>
       <Routes>
         <Route path="/" element={<ManageView />} />
         <Route path="/portfolio" element={<PortfolioView />} />

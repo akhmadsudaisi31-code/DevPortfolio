@@ -1,3 +1,5 @@
+import { buildAppUrl } from './site';
+
 type MetadataConfig = {
   title: string;
   description: string;
@@ -29,7 +31,7 @@ const ensureCanonicalLink = () => {
 };
 
 export const applyMetadata = ({ title, description, urlPath }: MetadataConfig) => {
-  const absoluteUrl = new URL(urlPath, window.location.origin).toString();
+  const absoluteUrl = buildAppUrl(urlPath);
 
   document.title = title;
 

@@ -6,6 +6,7 @@ const STORAGE_KEY = 'devportfolio_projects';
 const GITHUB_SYNC_KEY = 'devportfolio_github_sync';
 const AUTO_SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const AUTO_SYNC_COOLDOWN_MS = 3 * 60 * 1000;
+const DEFAULT_GITHUB_USERNAME = process.env.GITHUB_USERNAME?.trim() || 'akhmadsudaisi31-code';
 
 type GithubSyncSettings = {
   username: string;
@@ -14,8 +15,8 @@ type GithubSyncSettings = {
 };
 
 const defaultGithubSyncSettings: GithubSyncSettings = {
-  username: '',
-  enabled: false,
+  username: DEFAULT_GITHUB_USERNAME,
+  enabled: true,
   lastSyncedAt: null,
 };
 
@@ -102,9 +103,12 @@ export function useProjects() {
 
     if (storedGithubSyncSettings) {
       try {
+        const parsedGithubSyncSettings = JSON.parse(storedGithubSyncSettings) as Partial<GithubSyncSettings>;
         setGithubSyncSettings({
           ...defaultGithubSyncSettings,
-          ...JSON.parse(storedGithubSyncSettings),
+          ...parsedGithubSyncSettings,
+          username: parsedGithubSyncSettings.username?.trim() || DEFAULT_GITHUB_USERNAME,
+          enabled: typeof parsedGithubSyncSettings.enabled === 'boolean' ? parsedGithubSyncSettings.enabled : true,
         });
       } catch (error) {
         console.error('Failed to parse GitHub sync settings from local storage', error);

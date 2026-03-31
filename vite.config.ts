@@ -5,11 +5,14 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  const base = env.BASE_PATH || (mode === 'production' ? '/DevPortfolio/' : '/');
   return {
+    base,
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GITHUB_TOKEN': JSON.stringify(env.GITHUB_TOKEN),
+      'process.env.GITHUB_USERNAME': JSON.stringify(env.GITHUB_USERNAME),
     },
     resolve: {
       alias: {
